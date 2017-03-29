@@ -1,5 +1,10 @@
 package graphics
 
+import (
+	"github.com/veandco/go-sdl2/sdl"
+	"github.com/veandco/go-sdl2/sdl_image"
+)
+
 var allGraphics []*Screen
 
 func NewScreen() *Screen {
@@ -59,4 +64,33 @@ func (screen *Screen) GetSpriteFromTexture(texture *Texture) {
 	screen.sprites = append(screen.sprites, &Sprite{
 		0, 0, false, texture,
 	})
+}
+
+func (screen *Screen) GetTexture(path string) (*Texture, error) {
+	texture, err := getTexture(path)
+	if err != nil {
+		return err
+	}
+	screen.textures = append(screen.textures, texture)
+}
+
+func (screen *Screen) getTexture(path string) (*Texture, error) {
+	surface, err := img.Load(path)
+	if err != nil {
+		return nil, err
+	}
+	defer surface.Free()
+
+	tex, err := renderer.CreateTextureFromSurface(surface)
+	if err != nil {
+		return nil, err
+	}
+	w, h := surface.W, surface.H
+
+	return &Texture{
+		screen.index,
+		tex,
+		&sdl.Rect{0, 0, w, h},
+		&sdl.Rect{0, 0, w, h},
+	}, nil
 }
