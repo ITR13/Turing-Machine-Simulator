@@ -17,20 +17,15 @@ package frames
    along with Turing Machine.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-func (screen *Screen) SetBackground(path string) error {
-	var texture *Texture
-	var err error
-	if path != "" {
-		texture, err = screen.getTexture(path)
-		if err != nil {
-			return err
-		}
-	}
+import (
+	"github.com/veandco/go-sdl2/sdl"
+)
 
-	if screen.background != nil {
-		screen.background.destroy()
-	}
-	screen.background = texture
+type Input struct {
+	msWait int
+}
 
-	return nil
+func poll() {
+	for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
+	}
 }
