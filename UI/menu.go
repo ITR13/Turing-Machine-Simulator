@@ -15,8 +15,9 @@ type MenuElement struct {
 	nextField *frames.Field
 }
 
-func MakeMenu(backgroundPath, cursorPath string) (*Menu, error) {
-	screen := frames.NewScreen()
+func MakeMenu(backgroundPath, cursorPath string,
+	fe *frames.FrameEngine) (*Menu, error) {
+	screen := fe.NewScreen()
 	err := screen.SetBackground(backgroundPath)
 	if err != nil {
 		return nil, err
@@ -31,4 +32,8 @@ func MakeMenu(backgroundPath, cursorPath string) (*Menu, error) {
 		return &Menu{screen, cursor, make([]*MenuElement, 0)}, nil
 	}
 	return &Menu{screen, nil, make([]*MenuElement, 0)}, nil
+}
+
+func (menu *Menu) AddElement(x, y int, text string, next *frames.UpdateFunc) {
+
 }

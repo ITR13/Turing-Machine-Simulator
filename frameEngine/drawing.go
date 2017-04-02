@@ -1,6 +1,7 @@
 package frames
 
 func (screen *Screen) Render() {
+	renderer := screen.fe.graphics.renderer
 	renderer.SetRenderTarget(nil)
 	renderer.SetDrawColor(0, 0, 0, 255)
 	renderer.Clear()
@@ -22,5 +23,5 @@ func (sprite *Sprite) render() {
 
 func (tex *Texture) renderAt(x, y int32) {
 	tex.dst.X, tex.dst.Y = x, y
-	renderer.Copy(tex.texture, tex.src, tex.dst)
+	tex.fe.graphics.renderer.Copy(tex.texture, tex.src, tex.dst)
 }

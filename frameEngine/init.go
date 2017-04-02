@@ -12,17 +12,37 @@ const (
 	screenHeight int = 800 / 2
 )
 
-var (
-	window   *sdl.Window
-	renderer *sdl.Renderer
-	font     *ttf.Font
-)
+var hasInitSDL bool
+
+type FrameEngine struct {
+	running      bool
+	fields       []*Field
+	currentField *Field
+	canPushOrPop bool
+	error        error
+	graphics     *Graphics //This really doesn't need to be a pointer, but
+}
+
+type Field struct {
+	screen Screen
+	update *UpdateFunc
+}
+
+type UpdateFunc func()
+
+type Graphics struct {
+	window      *sdl.Window
+	renderer    *sdl.Renderer
+	font        *ttf.Font
+	allGraphics []*Screen
+}
 
 type Screen struct {
 	index      int
 	background *Texture
 	sprites    []*Sprite
 	textures   []*Texture
+	fe         *FrameEngine
 }
 
 type Sprite struct {
@@ -35,56 +55,79 @@ type Texture struct {
 	screenIndex int
 	texture     *sdl.Texture
 	src, dst    *sdl.Rect
+	fe          *FrameEngine
 }
 
-func Init() error {
-	sdl.Init(sdl.INIT_EVERYTHING)
+func (fe *FrameEngine) initFE(origin *Field) error {
+	if fe.graphics == nil {
+		fe.graphics = &Graphics{}
+	} else {
+		fe.graphics.CleanUp()
+	}
 
-	runtime.LockOSThread()
-	err := sdl.Init(sdl.INIT_EVERYTHING)
+	err := fe.graphics.initGraphics()
 	if err != nil {
 		return err
 	}
 
-	window, err = sdl.CreateWindow("Turing Machine", sdl.WINDOWPOS_UNDEFINED,
+	fe.currentField = origin
+	fe.fields = make([]*Field, 0)
+	return nil
+}
+
+func (g *Graphics) initGraphics() error {
+	runtime.LockOSThread()
+	var err error
+	if !hasInitSDL {
+		sdl.Init(sdl.INIT_EVERYTHING)
+		err = sdl.Init(sdl.INIT_EVERYTHING)
+		if err != nil {
+			return err
+		}
+		err = ttf.Init()
+		if err != nil {
+			return err
+		}
+		hasInitSDL = true
+	}
+
+	g.window, err = sdl.CreateWindow("Turing Machine", sdl.WINDOWPOS_UNDEFINED,
 		sdl.WINDOWPOS_UNDEFINED, int(screenWidth), int(screenHeight),
 		sdl.WINDOW_SHOWN|sdl.WINDOW_RESIZABLE|sdl.RENDERER_PRESENTVSYNC)
-	return err
+	if err != nil {
+		return err
+	}
 
-	renderer, err = sdl.CreateRenderer(window, -1, sdl.RENDERER_ACCELERATED)
+	g.renderer, err = sdl.CreateRenderer(g.window, -1, sdl.RENDERER_ACCELERATED)
 	if err != nil {
 		return err
 	}
-	renderer.Clear()
+	g.renderer.Clear()
 
-	err = ttf.Init()
+	g.font, err = ttf.OpenFont("./font/Play-Bold.ttf", 20)
 	if err != nil {
 		return err
 	}
-	font, err = ttf.OpenFont("./font/Play-Bold.ttf", 20)
-	if err != nil {
-		return err
-	}
-	allGraphics = make([]*Screen, 0)
+	g.allGraphics = make([]*Screen, 0)
 
 	return nil
 }
 
-func CleanUp() {
-	if window != nil {
-		window.Destroy()
-		window = nil
+func (g *Graphics) CleanUp() {
+	for i := range g.allGraphics {
+		g.allGraphics[i].destroy()
 	}
-	if renderer != nil {
-		renderer.Destroy()
-		renderer = nil
+	g.allGraphics = make([]*Screen, 0)
+	if g.font != nil {
+		g.font.Close()
+		g.font = nil
 	}
-	if font != nil {
-		font.Close()
-		font = nil
+	if g.window != nil {
+		g.window.Destroy()
+		g.window = nil
 	}
-	for i := range allGraphics {
-		allGraphics[i].destroy()
-		allGraphics = make([]*Screen, 0)
+	if g.renderer != nil {
+		g.renderer.Destroy()
+		g.renderer = nil
 	}
 }

@@ -1,33 +1,27 @@
 package frames
 
 import (
-	"fmt"
+	"github.com/go-errors/errors"
 )
 
-type FrameEngine struct {
-	fields       []*Field
-	currentField *Field
-	canPushOrPop bool
-	error        error
-}
+func (fe *FrameEngine) Run(origin *Field) error {
+	if fe.running {
+		return errors.Errorf("Cannot run an already running FrameEngine")
+	}
+	fe.running = true
+	defer func() {
+		fe.running = false
+	}()
 
-type Field struct {
-	screen Screen
-	update func()
-}
-
-func (fe *FrameEngine) Init(origin *Field) error {
-	err := Init()
+	err := fe.initFE(origin)
 	if err != nil {
 		return err
 	}
-	fe.currentField = origin
-	fe.fields = make([]*Field, 0)
-	fe.canPushOrPop = false
 	for fe.currentField != nil {
+		fe.canPushOrPop = false
 		fe.update()
 		if fe.error != nil {
-			return fmt.Errorf("Uncaught error: %v", fe.error)
+			return errors.Errorf("Uncaught error: %v", fe.error)
 		}
 	}
 
@@ -37,13 +31,13 @@ func (fe *FrameEngine) Init(origin *Field) error {
 func (fe *FrameEngine) update() {
 	fe.canPushOrPop = true
 	fe.currentField.screen.Render()
-	fe.currentField.update()
+	(*fe.currentField.update)()
 	fe.canPushOrPop = false
 }
 
 func (fe *FrameEngine) PushField(field *Field) error {
 	if !fe.canPushOrPop {
-		fe.error = fmt.Errorf("Tried pushing after having " +
+		fe.error = errors.Errorf("Tried pushing after having " +
 			"pushed or popped or switched")
 		return fe.error
 	}
@@ -55,7 +49,7 @@ func (fe *FrameEngine) PushField(field *Field) error {
 
 func (fe *FrameEngine) PopField() error {
 	if !fe.canPushOrPop {
-		fe.error = fmt.Errorf("Tried popping after having " +
+		fe.error = errors.Errorf("Tried popping after having " +
 			"pushed or popped or switched")
 		return fe.error
 	}

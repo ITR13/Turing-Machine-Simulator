@@ -5,23 +5,23 @@ import (
 	"github.com/veandco/go-sdl2/sdl_image"
 )
 
-var allGraphics []*Screen
-
-func NewScreen() *Screen {
-	mem := &Screen{len(allGraphics), nil,
-		make([]*Sprite, 0), make([]*Texture, 0)}
-	allGraphics = append(allGraphics, mem)
+func (fe *FrameEngine) NewScreen() *Screen {
+	g := fe.graphics
+	mem := &Screen{len(g.allGraphics), nil,
+		make([]*Sprite, 0), make([]*Texture, 0), fe}
+	g.allGraphics = append(g.allGraphics, mem)
 	return mem
 }
 
 func (mem *Screen) Destroy() {
+	g := mem.fe.graphics
 	if mem.index == -1 {
 		panic("Handling destroyed screen")
 	}
 	mem.index = -1
-	allGraphics = allGraphics[mem.index : mem.index+1]
-	for i := mem.index; i < len(allGraphics); i++ {
-		allGraphics[i].decrIndex()
+	g.allGraphics = g.allGraphics[mem.index : mem.index+1]
+	for i := mem.index; i < len(g.allGraphics); i++ {
+		g.allGraphics[i].decrIndex()
 	}
 	mem.destroy()
 }
@@ -84,7 +84,7 @@ func (screen *Screen) getTexture(path string) (*Texture, error) {
 	}
 	defer surface.Free()
 
-	tex, err := renderer.CreateTextureFromSurface(surface)
+	tex, err := screen.fe.graphics.renderer.CreateTextureFromSurface(surface)
 	if err != nil {
 		return nil, err
 	}
@@ -95,5 +95,6 @@ func (screen *Screen) getTexture(path string) (*Texture, error) {
 		tex,
 		&sdl.Rect{0, 0, w, h},
 		&sdl.Rect{0, 0, w, h},
+		screen.fe,
 	}, nil
 }
