@@ -2,31 +2,31 @@ package UI
 
 import (
 	"github.com/ITR13/turingMachine/frameEngine"
-	"github.com/ITR13/turingMachine/graphics"
 )
 
 type Menu struct {
-	screen   *graphics.Screen
-	cursor   *graphics.Sprite
+	screen   *frames.Screen
+	cursor   *frames.Sprite
 	elements []*MenuElement
 }
 
 type MenuElement struct {
-	sprite    *graphics.Sprite
+	sprite    *frames.Sprite
 	nextField *frames.Field
 }
 
-func MakeMenu(backgroundPath, cursorPath string) (*Menu, err) {
-	screen := graphics.NewScreen()
-	err := screen.SetBacground(backgroundPath)
+func MakeMenu(backgroundPath, cursorPath string) (*Menu, error) {
+	screen := frames.NewScreen()
+	err := screen.SetBackground(backgroundPath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if cursorPath != "" {
-		cursor, err := screen.GetTexture(cursorPath)
+		cursorTex, err := screen.GetTexture(cursorPath)
+		cursor := screen.GetSpriteFromTexture(cursorTex)
 		if err != nil {
 			screen.Destroy()
-			return err
+			return nil, err
 		}
 		return &Menu{screen, cursor, make([]*MenuElement, 0)}, nil
 	}

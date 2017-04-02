@@ -1,71 +1,90 @@
 package frames
 
 import (
-	"fmt"
+	"runtime"
 
-	"github.com/ITR13/turingMachine/graphics"
+	"github.com/veandco/go-sdl2/sdl"
+	"github.com/veandco/go-sdl2/sdl_ttf"
 )
 
-type FrameEngine struct {
-	fields       []*Field
-	currentField *Field
-	canPushOrPop bool
-	error        error
+const (
+	screenWidth  int = 1280 / 2
+	screenHeight int = 800 / 2
+)
+
+var (
+	window   *sdl.Window
+	renderer *sdl.Renderer
+	font     *ttf.Font
+)
+
+type Screen struct {
+	index      int
+	background *Texture
+	sprites    []*Sprite
+	textures   []*Texture
 }
 
-type Field struct {
-	screen *graphics.Screen
-	update func()
+type Sprite struct {
+	X, Y    int
+	Display bool
+	texture *Texture
 }
 
-func (fe *FrameEngine) Run(origin *Field) error {
-	err := graphics.Init()
+type Texture struct {
+	screenIndex int
+	texture     *sdl.Texture
+	src, dst    *sdl.Rect
+}
+
+func Init() error {
+	sdl.Init(sdl.INIT_EVERYTHING)
+
+	runtime.LockOSThread()
+	err := sdl.Init(sdl.INIT_EVERYTHING)
 	if err != nil {
 		return err
 	}
-	fe.currentField = origin
-	fe.fields = make([]*Field, 0)
-	fe.canPushOrPop = false
-	for fe.currentField != nil {
-		fe.update()
-		if fe.error != nil {
-			return fmt.Errorf("Uncaught error: %v", fe.error)
-		}
+
+	window, err = sdl.CreateWindow("Turing Machine", sdl.WINDOWPOS_UNDEFINED,
+		sdl.WINDOWPOS_UNDEFINED, int(screenWidth), int(screenHeight),
+		sdl.WINDOW_SHOWN|sdl.WINDOW_RESIZABLE|sdl.RENDERER_PRESENTVSYNC)
+	return err
+
+	renderer, err = sdl.CreateRenderer(window, -1, sdl.RENDERER_ACCELERATED)
+	if err != nil {
+		return err
 	}
+	renderer.Clear()
+
+	err = ttf.Init()
+	if err != nil {
+		return err
+	}
+	font, err = ttf.OpenFont("./font/Play-Bold.ttf", 20)
+	if err != nil {
+		return err
+	}
+	allGraphics = make([]*Screen, 0)
 
 	return nil
 }
 
-func (fe *FrameEngine) update() {
-	fe.canPushOrPop = true
-	fe.currentField.screen.Render()
-	fe.currentField.update()
-	fe.canPushOrPop = false
-}
-
-func (fe *FrameEngine) PushField(field *Field) error {
-	if !fe.canPushOrPop {
-		fe.error = fmt.Errorf("Tried pushing after having " +
-			"pushed or popped or switched")
-		return fe.error
+func CleanUp() {
+	if window != nil {
+		window.Destroy()
+		window = nil
 	}
-	fe.canPushOrPop = false
-	fe.fields = append(fe.fields, fe.currentField)
-	fe.currentField = field
-	return nil
-}
-
-func (fe *FrameEngine) PopField() error {
-	if !fe.canPushOrPop {
-		fe.error = fmt.Errorf("Tried popping after having " +
-			"pushed or popped or switched")
-		return fe.error
+	if renderer != nil {
+		renderer.Destroy()
+		renderer = nil
 	}
-	fe.currentField = nil
-	l := len(fe.fields)
-	if l > 0 {
-		fe.currentField = fe.fields[l-1]
-		fe.fields = fe.fields[:l-1]
+	if font != nil {
+		font.Close()
+		font = nil
 	}
-	return nil
+	for i := range allGraphics {
+		allGraphics[i].destroy()
+		allGraphics = make([]*Screen, 0)
+	}
 }

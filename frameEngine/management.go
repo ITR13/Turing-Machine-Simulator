@@ -1,16 +1,17 @@
-package graphics
+package frames
 
 func (screen *Screen) SetBackground(path string) error {
 	var texture *Texture
+	var err error
 	if path != "" {
-		texture, err := screen.GetTexture(path)
+		texture, err = screen.getTexture(path)
 		if err != nil {
 			return err
 		}
 	}
 
 	if screen.background != nil {
-		screen.background.Destroy()
+		screen.background.destroy()
 	}
 	screen.background = texture
 

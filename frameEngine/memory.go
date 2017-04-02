@@ -1,4 +1,4 @@
-package graphics
+package frames
 
 import (
 	"github.com/veandco/go-sdl2/sdl"
@@ -8,7 +8,7 @@ import (
 var allGraphics []*Screen
 
 func NewScreen() *Screen {
-	mem := &Screen{len(allGraphics), nil, nil, nil,
+	mem := &Screen{len(allGraphics), nil,
 		make([]*Sprite, 0), make([]*Texture, 0)}
 	allGraphics = append(allGraphics, mem)
 	return mem
@@ -27,15 +27,17 @@ func (mem *Screen) Destroy() {
 }
 
 func (mem *Screen) destroy() {
-	mem.background.Destroy()
-	mem.background = nil
-	mem.bsrc, mem.bdst = nil, nil
+	if mem.background != nil {
+		mem.background.destroy()
+		mem.background = nil
+	}
 	for i := range mem.sprites {
 		mem.sprites[i].texture = nil
 	}
 	for i := range mem.textures {
 		mem.textures[i].destroy()
 	}
+	mem.sprites, mem.textures = make([]*Sprite, 0), make([]*Texture, 0)
 }
 
 func (tex *Texture) destroy() {
@@ -54,24 +56,25 @@ func (screen *Screen) decrIndex() {
 	}
 }
 
-func (screen *Screen) GetSpriteFromTexture(texture *Texture) {
+func (screen *Screen) GetSpriteFromTexture(texture *Texture) *Sprite {
 	if texture == nil {
 		panic("Tried to make sprite without texture")
 	}
 	if texture.screenIndex != screen.index {
 		panic("Textures are screen-specific")
 	}
-	screen.sprites = append(screen.sprites, &Sprite{
-		0, 0, false, texture,
-	})
+	sprite := &Sprite{0, 0, false, texture}
+	screen.sprites = append(screen.sprites, sprite)
+	return sprite
 }
 
 func (screen *Screen) GetTexture(path string) (*Texture, error) {
-	texture, err := getTexture(path)
+	texture, err := screen.getTexture(path)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	screen.textures = append(screen.textures, texture)
+	return texture, nil
 }
 
 func (screen *Screen) getTexture(path string) (*Texture, error) {

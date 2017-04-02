@@ -1,11 +1,12 @@
-package graphics
+package frames
 
 func (screen *Screen) Render() {
 	renderer.SetRenderTarget(nil)
 	renderer.SetDrawColor(0, 0, 0, 255)
 	renderer.Clear()
 	if screen.background != nil {
-		renderer.Copy(screen.background, screen.bsrc, screen.bdst)
+		renderer.Copy(screen.background.texture,
+			screen.background.src, screen.background.dst)
 	}
 	for i := range screen.sprites {
 		screen.sprites[i].render()
